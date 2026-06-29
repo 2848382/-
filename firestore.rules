@@ -1,0 +1,373 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "10049810a@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+      );
+    }
+
+    function isApproved() {
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approvalStatus == 'approved')
+      );
+    }
+
+    // --- User Profile Validation ---
+    function isValidUser(data, userId) {
+      return data.uid is string && data.uid == userId;
+    }
+
+    // --- Rules ---
+
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+    
+    match /rate_limits/{docId} {
+      allow read: if isSignedIn() && (docId.split('_')[0] == request.auth.uid || isAdmin());
+      allow create, update: if isSignedIn() && docId.split('_')[0] == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // Directory access
+      allow delete: if isAdmin();
+      
+      allow create: if isOwner(userId) && isValidUser(incoming(), userId) && 
+                    incoming().createdAt == request.time &&
+                    !incoming().keys().hasAny(['role', 'isAdmin']);
+                    
+      allow update: if (isOwner(userId) || isAdmin() || isSignedIn()) && (
+        // Action: Heartbeat (only lastActive)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['lastActive']) && 
+         incoming().lastActive == request.time) ||
+        
+        // Action: Admin Full Override
+        (isAdmin() && (incoming().get('updatedAt', 0) == request.time || incoming().get('lastActive', 0) == request.time)) ||
+
+        // Action: Interaction Logic (Affecting another student) - ONLY ALLOWED BY ADMIN NOW?
+        // Wait, the prompt said: "일반 플레이어가 남의 balance, inventory, badges, loops, memoryPoints, penaltyPoints, status, role, isAdmin 등을 수정하면 안 됨"
+        // Let's restrict it strictly.
+        (isSignedIn() && !isOwner(userId) &&
+         // ONLY ALLOW limited updates to other users if any? E.g., maybe bonding/stress but let's be careful. The prompt says "타인에게 영향을 주는 행동은 별도 요청 컬렉션으로 만들거나, 매우 제한된 필드만 허용"
+         // I'll leave the current logic for other users, but make sure critical fields are excluded.
+         // Actually, let's just allow nothing for non-owners except via admin, or only very specific fields if needed.
+         // But I shouldn't break existing features entirely if they rely on it without requests. Let's keep existing, but remove the critical ones from the list.
+         // The original had: 'balance', 'bonding', 'stress', 'rebellion', 'physical', 'academicAchievement', 'stamina', 'trauma', 'loops', 'memoryPoints', 'penaltyPoints', 'inventory', 'updatedAt', 'lastActive', 'badges'
+         // I'll reduce this list for non-owners:
+         incoming().diff(existing()).affectedKeys().hasOnly([
+           'bonding', 'updatedAt', 'lastActive'
+         ]) &&
+         (incoming().get('updatedAt', 0) == request.time || incoming().get('lastActive', 0) == request.time)) ||
+
+        // Action: User Self Update
+        (isOwner(userId) && isValidUser(incoming(), userId) && 
+         !incoming().diff(existing()).affectedKeys().hasAny(['isBanned', 'balance', 'inventory', 'badges', 'loops', 'memoryPoints', 'penaltyPoints', 'role', 'isAdmin', 'status', 'approvalStatus']) &&
+         incoming().diff(existing()).affectedKeys().hasOnly([
+           'trauma', 'updatedAt', 'photoURL', 
+           'physical', 'stress', 'stamina', 'academicAchievement', 'statsEditCount',
+           'attendanceDays', 'bonding', 'rebellion', 'lastActive', 'rivalId', 'lastCheckIn', 'bio', 'mbti', 'dormRoom', 'checkInHistory', 'fcmToken', 'activeView', 'favoriteApps', 'completedQuests', 'isCardFrozen'
+         ]) && 
+         (incoming().get('updatedAt', 0) == request.time || incoming().get('lastActive', 0) == request.time))
+      );
+
+      // Bonds subcollection
+      match /bonds/{bondId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      // Transactions subcollection
+      match /transactions/{txId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isApproved(); // allow sender to create transaction for receiver
+      }
+    }
+
+    match /system/config {
+      allow read: if isSignedIn();
+      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['logs']));
+      allow create: if isAdmin();
+    }
+
+    match /notices/{noticeId} {
+      allow read: if isSignedIn();
+      allow create: if isApproved();
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.authorUid == request.auth.uid);
+    }
+
+    match /whispers/{whisperId} {
+      allow read: if isApproved() || isAdmin();
+      allow create: if (isApproved() || isAdmin()) && 
+                    incoming().content is string && incoming().content.size() <= 1000 &&
+                    incoming().createdAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    match /votes/{voteId} {
+      allow create: if isApproved() && 
+                    incoming().voterId == request.auth.uid &&
+                    incoming().createdAt == request.time;
+      allow read: if isApproved() || isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Managed via console for security
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isApproved() && (roomId == 'group_teacher' || request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isApproved() && (roomId == 'group_teacher' || request.auth.uid in request.resource.data.participants);
+      allow update: if isApproved() && (roomId == 'group_teacher' || request.auth.uid in resource.data.participants || isAdmin());
+
+      match /messages/{messageId} {
+        allow read: if isApproved() && (roomId == 'group_teacher' || isAdmin() || (exists(/databases/$(database)/documents/rooms/$(roomId)) && request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants));
+        allow create: if isApproved() && (roomId == 'group_teacher' || (exists(/databases/$(database)/documents/rooms/$(roomId)) && get(/databases/$(database)/documents/rooms/$(roomId)).data.participants.hasAny([request.auth.uid]) && request.resource.data.senderId == request.auth.uid));
+        // 작성자는 자신의 메시지 수정/삭제 가능 (senderId 변경 불가 조건 포함)
+        allow update: if isAdmin() || (resource.data.senderId == request.auth.uid && request.resource.data.senderId == resource.data.senderId);
+        allow delete: if isAdmin() || (resource.data.senderId == request.auth.uid);
+      }
+    }
+
+    match /player_notes/{userId} {
+      allow read: if isOwner(userId) || (existing() != null && resource.data.isPublic == true) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if (isOwner(userId) && (!incoming().diff(existing()).affectedKeys().hasAny(['isOverridden', 'overrideContent']) || (!existing().get('isOverridden', false)))) || isAdmin();
+    }
+
+    match /whiteboard/shared {
+      allow read: if isApproved();
+      allow create, update: if isApproved() || isAdmin();
+    }
+
+    match /secret_notes/{noteId} {
+      allow read: if isApproved() && request.auth.uid in resource.data.participants;
+      allow create: if isApproved() && request.auth.uid in request.resource.data.participants;
+      allow update: if isApproved() && request.auth.uid in resource.data.participants && request.auth.uid in request.resource.data.participants;
+    }
+
+    match /items/{itemId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+
+    match /marketplace/{itemId} {
+      allow read: if isApproved();
+      allow create: if isApproved();
+      allow update: if isApproved();
+      allow delete: if isApproved();
+    }
+
+    match /reward_requests/{reqId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+      allow create: if isSignedIn() && 
+                    incoming().requesterId == request.auth.uid && 
+                    incoming().status == 'pending' && 
+                    incoming().reason is string && 
+                    incoming().reason.size() <= 300 && 
+                    incoming().createdAt == request.time;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /relationships/{relId} {
+      allow read: if isAdmin() || 
+                  resource.data.visibility == 'public' || 
+                  (isSignedIn() && request.auth.uid in resource.data.participants);
+      allow create: if isApproved() && 
+                    incoming().initiatorUid == request.auth.uid && 
+                    request.auth.uid in incoming().participants && 
+                    incoming().participants.size() == 2 && 
+                    incoming().visibility in ['public', 'participants'] && 
+                    incoming().status == 'pending';
+      allow update: if isAdmin() || (
+        isSignedIn() && request.auth.uid in resource.data.participants &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        incoming().status in ['broken']
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /event_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() || isAdmin();
+      allow update: if isAdmin();
+    }
+
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /clue_nodes/{nodeId} {
+      allow read: if isApproved() || isAdmin();
+      allow create: if isApproved();
+      allow update: if isApproved() || isAdmin();
+      allow delete: if isApproved() || isAdmin();
+    }
+
+    match /manitto_assignments/{assignmentId} {
+      allow read: if isAdmin() || 
+                    (isApproved() && (
+                      resource.data.giverId == request.auth.uid || 
+                      get(/databases/$(database)/documents/system/config).data.manittoRevealed == true
+                    ));
+      allow update: if (isApproved() && resource.data.giverId == request.auth.uid && 
+                       incoming().diff(existing()).affectedKeys().hasOnly(['missionsDone', 'guessStudentId', 'guessStatus'])) ||
+                    isAdmin();
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /manitto_gifts/{giftId} {
+      allow read: if isAdmin() || (isApproved() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid));
+      allow create: if isApproved() && incoming().senderId == request.auth.uid && incoming().createdAt == request.time;
+      allow update: if isAdmin() || (isApproved() && resource.data.receiverId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status']));
+      allow delete: if isAdmin();
+    }
+
+    match /private_missions/{missionId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.targetUid == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.targetUid == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isCompleted', 'completedAt']) &&
+        incoming().isCompleted == true
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /anonymous_tips/{tipId} {
+      allow read: if isAdmin() || 
+                  (isSignedIn() && resource.data.senderUid == request.auth.uid) || 
+                  (isSignedIn() && resource.data.recipientUid == request.auth.uid);
+      allow create: if isApproved() && 
+                    incoming().senderUid == request.auth.uid && 
+                    incoming().recipientUid is string && 
+                    incoming().content is string && 
+                    incoming().content.size() <= 300 && 
+                    incoming().isRead == false && 
+                    incoming().createdAt == request.time;
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.recipientUid == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'readAt']) &&
+        incoming().isRead == true
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /dual_contracts/{contractId} {
+      allow read: if isAdmin() || 
+                  (isSignedIn() && resource.data.playerAUid == request.auth.uid) || 
+                  (isSignedIn() && resource.data.playerBUid == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() && (resource.data.playerAUid == request.auth.uid || resource.data.playerBUid == request.auth.uid) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /confessions/{confessionId} {
+      allow read: if isAdmin();
+      allow create: if isApproved();
+      allow update: if isAdmin();
+    }
+
+    match /wills/{willId} {
+      allow read: if isApproved() || isAdmin();
+      allow create: if isApproved();
+      allow update: if isApproved() || isAdmin();
+    }
+
+    match /letters/{letterId} {
+      allow read: if isAdmin() || 
+                  (isSignedIn() && resource.data.senderUid == request.auth.uid) || 
+                  (isSignedIn() && resource.data.recipientUid == request.auth.uid);
+      allow create: if isApproved() && 
+                    incoming().senderUid == request.auth.uid && 
+                    incoming().recipientUid is string && 
+                    incoming().content is string && 
+                    incoming().content.size() <= 1000 && 
+                    incoming().isRead == false;
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.recipientUid == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'readAt']) &&
+        incoming().isRead == true
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /scenario_scripts/{scriptId} {
+      allow read: if isApproved() || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /interrogation_sessions/{sessId} {
+      allow read: if isApproved() || isAdmin();
+      allow create: if isAdmin();
+      allow update: if isApproved() || isAdmin();
+    }
+
+    match /room_status/{roomId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || (isSignedIn() && incoming().keys().hasOnly(['presentPlayers', 'updatedAt']));
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['presentPlayers', 'updatedAt'])
+      );
+    }
+
+    match /system/heartbeat {
+      allow read: if true;
+    }
+
+    match /system/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /master_commands/{cmdId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+

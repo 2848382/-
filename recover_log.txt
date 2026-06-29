@@ -1,0 +1,3 @@
+Error: Command failed: git log -p src/components/SchoolMap.tsx
+fatal: not a git repository (or any of the parent directories): .git
+

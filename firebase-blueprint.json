@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Student profile with trauma and loop data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "studentId": { "type": "string" },
+        "trauma": { "type": "number", "description": "0-100" },
+        "loops": { "type": "number", "description": "1-9" },
+        "memoryPoints": { "type": "number" },
+        "balance": { "type": "number", "description": "KRW balance, default 100000" },
+        "secureCode": { "type": "string", "description": "8-digit unique ID code" },
+        "photoURL": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "name", "studentId", "trauma", "loops", "balance", "secureCode"]
+    },
+    "Transaction": {
+      "title": "Banking Transaction",
+      "description": "History of financial events",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["spend", "receive", "transfer", "eerie"] },
+        "toFrom": { "type": "string" },
+        "memo": { "type": "string" },
+        "balanceAfter": { "type": "number" },
+        "isGlitch": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "type", "toFrom", "createdAt"]
+    },
+    "Bond": {
+      "title": "Emotional Bond",
+      "description": "Relationship state between two students",
+      "type": "object",
+      "properties": {
+        "fromUid": { "type": "string" },
+        "toUid": { "type": "string" },
+        "trust": { "type": "number" },
+        "hatred": { "type": "number" },
+        "obsession": { "type": "number" },
+        "pity": { "type": "number" },
+        "lastAction": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUid", "toUid", "trust", "hatred", "obsession", "pity"]
+    },
+    "Vote": {
+      "title": "Anonymous Vote",
+      "description": "Daily sacrifice/bystander vote record",
+      "type": "object",
+      "properties": {
+        "voterId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "loopIndex": { "type": "number" },
+        "type": { "type": "string", "enum": ["sacrifice", "bystander"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["voterId", "targetId", "loopIndex", "type"]
+    },
+    "Whisper": {
+      "title": "Whispering Wall Message",
+      "description": "System or anonymous messages on the whispering wall",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "content": { "type": "string" },
+        "isDistorted": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["system", "anonymous", "direct"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "type", "createdAt"]
+    },
+    "Notice": {
+      "title": "System Notice",
+      "description": "Official school announcements",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "createdAt"]
+    },
+    "SystemConfig": {
+      "title": "Global System Configuration",
+      "description": "Master toggles and glitch settings",
+      "type": "object",
+      "properties": {
+        "bloodMode": { "type": "boolean" },
+        "isShutdown": { "type": "boolean" },
+        "activeAlert": { "type": "string" },
+        "glitchIntensity": { "type": "number" },
+        "manittoEnabled": { "type": "boolean", "description": "Whether Manitto system is active" },
+        "manittoRevealed": { "type": "boolean", "description": "Whether all manitto identities are revealed" }
+      }
+    },
+    "ManittoAssignment": {
+      "title": "Manitto Assignment",
+      "description": "Mapping of giver to receiver",
+      "type": "object",
+      "properties": {
+        "giverId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "revealed"] },
+        "missionsDone": { "type": "array" },
+        "guessStudentId": { "type": "string", "description": "The student ID the user guessed as their manitto" },
+        "guessStatus": { "type": "string", "enum": ["pending", "correct", "incorrect"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["giverId", "receiverId", "status"]
+    },
+    "ManittoGift": {
+      "title": "Manitto Gift",
+      "description": "A gift sent through the secret locker",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "receiverStudentId": { "type": "string", "description": "S-0000 format" },
+        "itemName": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "receiverId", "itemName", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Student profiles"
+    },
+    "/manitto_assignments/{assignmentId}": {
+      "schema": "ManittoAssignment",
+      "description": "Active manitto pairs"
+    },
+    "/manitto_gifts/{giftId}": {
+      "schema": "ManittoGift",
+      "description": "Sent gifts in lockers"
+    },
+    "/users/{userId}/bonds/{bondId}": {
+      "schema": "Bond",
+      "description": "Emotional bonds owned by a user"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Bank transaction history"
+    },
+    "/admins/{adminId}": {
+      "schema": "object",
+      "description": "Admin access control"
+    },
+    "/whispers/{whisperId}": {
+      "schema": "Whisper",
+      "description": "Whispers on the wall"
+    },
+    "/notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "School notices"
+    },
+    "/system/config": {
+      "schema": "SystemConfig",
+      "description": "Global settings"
+    }
+  }
+}

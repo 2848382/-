@@ -1,0 +1,670 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap");
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@font-face {
+  font-family: 'AppleSDGothicNeo';
+  src: local('Apple SD Gothic Neo'), local('AppleSDGothicNeo-Medium');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "AppleSDGothicNeo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* override default blue */
+  --color-blue-50: #e5e5f5;
+  --color-blue-100: #cccced;
+  --color-blue-200: #b3b3e6;
+  --color-blue-300: #9999de;
+  --color-blue-400: #8080d6;
+  --color-blue-500: #000052;
+  --color-blue-600: #000042;
+  --color-blue-700: #000033;
+  --color-blue-800: #000024;
+  --color-blue-900: #000015;
+  --color-blue-950: #00000a;
+
+  --color-mw-blue: #000052;
+  --color-mw-white: #ffffff;
+  --color-horror-red: #dc2626;
+  --color-decay-green: #4a5d4a;
+
+  /* 신규 디자인 토큰 */
+  --color-primary-950: #020617;
+  --color-primary-900: #0f172a;
+  --color-primary-800: #1e293b;
+  --color-primary-700: #334155;
+  --color-primary-600: #000042;
+  --color-primary-500: #000052;
+  --color-primary-400: #1a1a72;
+  --color-primary-100: #e5e5f5;
+  --color-primary-50:  #f2f2fa;
+
+  --color-neutral-900: #111827;
+  --color-neutral-700: #374151;
+  --color-neutral-500: #6b7280;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-50:  #f9fafb;
+
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger:  #ef4444;
+  --color-info:    #000052;
+
+  --color-bg:           #f4f6fb;
+  --color-surface:      #ffffff;
+  --color-surface-sub:  #f8fafc;
+  --color-border:       #e8ecf0;
+  --color-border-focus: #000052;
+
+  --color-stat-academic:  #000052;
+  --color-stat-physical:  #10b981;
+  --color-stat-bonding:   #ec4899;
+  --color-stat-rebellion: #ef4444;
+  --color-stat-stress:    #f97316;
+  --color-stat-stamina:   #8b5cf6;
+
+  --color-dark-bg:      #020617; /* Deep Navy */
+  --color-dark-surface: #1e293b; /* Cool Gray UI */
+  --color-dark-surface-sub: #0f172a;
+  --color-dark-border:  #334155;
+  --color-dark-text:    #f8fafc;
+  --color-dark-text-sub: #94a3b8;
+
+  --animate-shimmer: shimmer 2s infinite;
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--color-bg)] text-[var(--color-neutral-900)] font-sans antialiased;
+    font-family: 'AppleSDGothicNeo', 'Apple SD Gothic Neo', "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    letter-spacing: -0.02em;
+    line-height: 1.5;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+  }
+  
+  :root.dark {
+    --color-bg: var(--color-dark-bg);
+    --color-surface: var(--color-dark-surface);
+    --color-surface-sub: var(--color-dark-surface-sub);
+    --color-border: var(--color-dark-border);
+    --color-neutral-900: var(--color-dark-text);
+    --color-neutral-700: var(--color-dark-text-sub);
+    --color-border-focus: var(--color-primary-100);
+  }
+
+  :root.dark body {
+    color: var(--color-dark-text);
+  }
+
+  :root.dark .glass-drawer {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :root.dark .mw-card {
+    background-color: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+  }
+
+  * {
+    letter-spacing: inherit;
+  }
+
+  /* 알림 드로어 전용 글래스 효과 (연한 쿨그레이 테마) */
+.glass-drawer {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(241, 245, 249, 0.3); /* Slate-100 기반 연한 쿨그레이 */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.4); /* 카드 배경을 조금 더 밝게 */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.glass-card:active {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* iOS Input Zoom Prevention */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Modern Solid components */
+.modern-card {
+  @apply bg-white border border-[#E2E8F0] rounded-[2rem] transition-all duration-300;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.modern-btn-primary {
+  @apply bg-[#0F172A] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#1E293B] transition-all active:scale-95 disabled:opacity-50;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+}
+
+.modern-btn-secondary {
+  @apply bg-[#F1F5F9] text-[#1E293B] font-bold py-3 px-6 rounded-xl hover:bg-[#E2E8F0] transition-all active:scale-95;
+}
+
+.modern-btn-outline {
+  @apply bg-transparent text-[#0F172A] font-bold py-3 px-6 rounded-xl border-2 border-[#E2E8F0] hover:border-[#0F172A] hover:bg-[#F1F5F9] transition-all active:scale-95;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-emerald-400;
+}
+
+/* Custom transitions and states */
+.tab-active {
+  @apply text-mw-blue bg-white shadow-md scale-105;
+}
+
+/* Glitch Animations */
+.glitch-text {
+  animation: mw-glitch 0.2s infinite;
+  text-shadow:
+    1px 0 #ff0000,
+    -1px 0 #00ff00;
+}
+
+@keyframes mw-glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+.animate-mw-glitch {
+  animation: mw-glitch 0.2s infinite;
+}
+
+/* Progressive Glitch for Loops */
+.progressive-glitch-1 {
+  filter: contrast(1.02) saturate(1.05);
+}
+.progressive-glitch-2 {
+  filter: contrast(1.05) brightness(1.02);
+}
+.progressive-glitch-3 {
+  filter: contrast(1.1) sepia(0.05);
+}
+.progressive-glitch-4 {
+  filter: contrast(1.2) hue-rotate(5deg);
+  opacity: 0.99;
+}
+.progressive-glitch-5 {
+  filter: contrast(1.3) hue-rotate(15deg) blur(0.1px);
+}
+.progressive-glitch-6 {
+  filter: contrast(1.4) hue-rotate(30deg) blur(0.3px);
+}
+.progressive-glitch-7 {
+  filter: contrast(1.6) hue-rotate(60deg) invert(0.02);
+}
+.progressive-glitch-8 {
+  filter: contrast(1.8) hue-rotate(120deg) invert(0.05) brightness(0.9);
+}
+.progressive-glitch-9 {
+  filter: contrast(2.2) hue-rotate(240deg) invert(0.15) brightness(0.6)
+    blur(0.8px);
+  animation: mw-glitch 0.4s infinite;
+}
+
+/* Blood Mode UI */
+.blood-mode {
+  background-color: #1a0505 !important;
+  color: #ff3333 !important;
+}
+.blood-mode .bg-white {
+  background-color: #2a0a0a !important;
+  color: #ff5555 !important;
+  border-color: rgba(255, 0, 0, 0.1) !important;
+}
+.blood-mode .text-mw-blue {
+  color: #ff4444 !important;
+}
+.blood-mode .border-mw-blue\/5 {
+  border-color: rgba(255, 0, 0, 0.2) !important;
+}
+.blood-mode .bg-mw-blue {
+  background-color: #880000 !important;
+}
+.blood-mode input,
+.blood-mode textarea {
+  background-color: #1a0505 !important;
+  color: #ff3333 !important;
+  border-color: #440000 !important;
+}
+
+/* Blood Splatter effect on click */
+.blood-splat {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, #880000 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: splat-fade 2s forwards;
+}
+
+@keyframes splat-fade {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* System Terminal */
+.system-terminal {
+  scrollbar-width: none;
+}
+.system-terminal::-webkit-scrollbar {
+  display: none;
+}
+
+/* Red Overlay Warning */
+.red-overlay {
+  animation: warning-flash 1s infinite;
+}
+
+@keyframes warning-flash {
+  0%,
+  100% {
+    background-color: rgba(255, 0, 0, 0);
+  }
+  50% {
+    background-color: rgba(255, 0, 0, 0.15);
+  }
+}
+
+/* 신규 공용 CSS 클래스 */
+.text-display  { font-size: 1.5rem;   font-weight: 900; letter-spacing: -0.05em; line-height: 1.2; }
+.text-heading  { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.2; }
+.text-subhead  { font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.03em; }
+.text-body     { font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.02em; }
+.text-caption  { font-size: 0.7rem;    font-weight: 600; letter-spacing: -0.01em; }
+.text-micro    { font-size: 0.625rem;  font-weight: 700; letter-spacing: 0; text-transform: uppercase; }
+
+@media (min-width: 640px) {
+  .text-display  { font-size: 2rem;     letter-spacing: -0.04em; line-height: 1.1; }
+  .text-heading  { font-size: 1.25rem;  letter-spacing: -0.03em; line-height: 1.2; }
+  .text-subhead  { font-size: 1rem;     letter-spacing: -0.02em; }
+  .text-body     { font-size: 0.875rem; letter-spacing: -0.01em; }
+  .text-caption  { font-size: 0.75rem;  }
+  .text-micro    { font-size: 0.6875rem; letter-spacing: 0.02em; }
+}
+
+@utility mw-card {
+  @apply bg-white border border-[var(--color-border)] rounded-[1.5rem];
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 1px rgba(0,0,0,0.06);
+}
+
+@utility mw-card-sub {
+  @apply bg-[var(--color-surface-sub)] border border-[var(--color-border)] rounded-[1rem];
+}
+
+@utility mw-btn {
+  @apply inline-flex items-center justify-center gap-1.5 sm:gap-2 font-bold transition-all duration-150 
+         active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none 
+         rounded-[0.75rem] px-4 sm:px-5 py-2.5 sm:py-3 text-[0.8125rem] sm:text-[0.875rem] tracking-tight;
+}
+
+@utility mw-btn-primary {
+  @apply mw-btn bg-[var(--color-primary-500)] text-white shadow-[0_4px_14px_rgba(0,0,82,0.15)] hover:bg-[var(--color-primary-600)];
+}
+
+@utility mw-btn-sub {
+  @apply mw-btn bg-[var(--color-primary-50)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-100)];
+}
+
+@utility mw-btn-blue {
+  @apply mw-btn bg-[var(--color-primary-500)] text-white;
+}
+
+@utility mw-btn-ghost {
+  @apply mw-btn bg-[var(--color-neutral-100)] text-[var(--color-neutral-700)];
+}
+
+@utility mw-btn-danger {
+  @apply mw-btn bg-[var(--color-danger)] text-white;
+}
+
+@utility mw-input {
+  @apply w-full bg-[var(--color-neutral-50)] border border-[var(--color-border)]
+         rounded-[0.625rem] px-4 py-2.5 sm:py-3 text-[0.8125rem] sm:text-[0.875rem] font-medium tracking-tight
+         placeholder:text-[var(--color-neutral-300)]
+         focus:outline-none focus:border-[var(--color-border-focus)]
+         focus:ring-2 focus:ring-[var(--color-primary-500)]/15 transition-all;
+}
+
+@utility mw-badge {
+  @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[0.6875rem] font-bold;
+}
+
+/* Face Distortion */
+.progressive-glitch-5 img,
+.progressive-glitch-6 img,
+.progressive-glitch-7 img,
+.progressive-glitch-8 img,
+.progressive-glitch-9 img {
+  animation: face-distort 20s infinite alternate ease-in-out;
+}
+
+@keyframes face-distort {
+  0% {
+    filter: contrast(1) brightness(1) hue-rotate(0deg);
+  }
+  50% {
+    filter: contrast(1.2) brightness(0.9) hue-rotate(5deg) saturate(1.5);
+  }
+  100% {
+    filter: contrast(2) brightness(0.5) hue-rotate(-10deg) invert(0.1);
+  }
+}
+
+/* Mirror World Inversion */
+.mirror-world {
+  transform: scaleX(-1);
+  cursor: crosshair !important;
+}
+.mirror-world-content {
+  transform: scaleX(-1);
+}
+
+/* Blue Screen */
+.blue-screen {
+  background: #0000aa;
+  color: #fff;
+  font-family: "Lucida Console", monospace;
+}
+.animate-mw-glitch {
+  animation: mw-glitch 0.2s infinite;
+}
+
+@keyframes mw-scanline {
+  0% {
+    bottom: 100%;
+  }
+  100% {
+    bottom: 0%;
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.selection-none {
+  user-select: none;
+}
+
+/* Horror / Loop Effects */
+.scanlines-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.03) 50%,
+    rgba(0, 0, 0, 0.03)
+  );
+  background-size: 100% 4px;
+  animation: scanlines-scroll 10s linear infinite;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+.glitch-active .scanlines-overlay {
+  opacity: 1;
+}
+
+.glitch-active .text-mw-blue,
+.glitch-active .text-\[\#0F172A\],
+.glitch-active h1,
+.glitch-active h2,
+.glitch-active h3 {
+  text-shadow:
+    1px 1px 3px rgba(185, 28, 28, 0.4),
+    -1px -1px 2px rgba(185, 28, 28, 0.2);
+  color: #3f0909 !important;
+  animation: text-bleed-anim 3s infinite alternate ease-in-out;
+}
+
+@keyframes scanlines-scroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 100%;
+  }
+}
+
+.glitch-text-bleed {
+  text-shadow: 0px 0px 0px rgba(185, 28, 28, 0);
+  animation: text-bleed-anim 3s infinite alternate ease-in-out;
+}
+
+@keyframes text-bleed-anim {
+  0% {
+    text-shadow: 0px 0px 0px rgba(185, 28, 28, 0);
+  }
+  100% {
+    text-shadow:
+      1px 1px 3px rgba(185, 28, 28, 0.4),
+      -1px -1px 2px rgba(185, 28, 28, 0.2);
+    color: #3f0909;
+  }
+}
+
+/* 신규: 스탯 기반 UI 이상 시각 효과 */
+.physical-low-mode * {
+  animation: micro-shake 3s infinite ease-in-out;
+}
+@keyframes micro-shake {
+  0%, 90%, 100% { transform: translate(0, 0); }
+  92% { transform: translate(-1px, 0.5px); }
+  94% { transform: translate(1px, -0.5px); }
+  96% { transform: translate(-0.5px, 1px); }
+}
+
+/* ECG 파형 흐름 */
+@keyframes ecg-flow {
+  from { stroke-dashoffset: 1000; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* 레이더 스캔 */
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 파문 퍼짐 */
+@keyframes ripple-expand {
+  from { r: 4; opacity: 0.8; }
+  to   { r: 24; opacity: 0; }
+}
+
+/* 신호 불안정 흔들림 */
+@keyframes signal-unstable {
+  0%, 100% { transform: translateX(0); }
+  20%  { transform: translateX(-1px); }
+  40%  { transform: translateX(1px); }
+  60%  { transform: translateX(-0.5px); }
+  80%  { transform: translateX(0.5px); }
+}
+
+/* 루프 게이지 경고 점 */
+@keyframes loop-warning-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.15; }
+}
+
+.loop-warning-dot {
+  animation: loop-warning-blink 0.8s ease-in-out infinite;
+}
+
+.signal-unstable {
+  animation: signal-unstable 0.4s ease-in-out infinite;
+}
+
+/* 신규: 글로벌 분위기 (Atmosphere) 효과 */
+.atmosphere-ominous {
+  filter: contrast(1.1) brightness(0.85) saturate(0.8);
+  box-shadow: inset 0 0 150px rgba(0,0,0,0.4);
+}
+
+.atmosphere-rain {
+  position: relative;
+}
+.atmosphere-rain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: linear-gradient(rgba(0,0,0,0), rgba(59, 130, 246, 0.05));
+}
+.atmosphere-rain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 80px 80px;
+  animation: rain-scroll 0.5s linear infinite;
+  opacity: 0.2;
+}
+
+@keyframes rain-scroll {
+  from { background-position: 0 0; }
+  to { background-position: 10px 100px; }
+}
+
+.atmosphere-doomsday {
+  filter: sepia(0.3) saturate(2) brightness(0.7) hue-rotate(-20deg);
+  animation: quake 4s infinite ease-in-out;
+}
+
+@keyframes quake {
+  0%, 100% { transform: translate(0, 0); }
+  1% { transform: translate(-1px, 1px); }
+  2% { transform: translate(1px, -1px); }
+  3% { transform: translate(-1px, -1px); }
+  4% { transform: translate(0, 0); }
+}
+
+.atmosphere-frozen {
+  box-shadow: inset 0 0 100px rgba(103, 232, 249, 0.2);
+  filter: saturate(0.6) brightness(1.1);
+}
+.atmosphere-frozen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 105;
+  background: radial-gradient(circle at center, transparent 60%, rgba(207, 250, 254, 0.15) 100%);
+  border: 10px solid rgba(207, 250, 254, 0.05);
+}
+
+.atmosphere-glitch {
+  animation: glitch-vibrate 0.1s infinite;
+}
+
+@keyframes glitch-vibrate {
+  0% { transform: translate(0); filter: hue-rotate(0deg); }
+  10% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); }
+  20% { transform: translate(2px, -1px); filter: hue-rotate(180deg); }
+  100% { transform: translate(0); filter: hue-rotate(0deg); }
+}
+
+/* prefers-reduced-motion 전역 오버라이드 */
+@media (prefers-reduced-motion: reduce) {
+  .ecg-path,
+  .radar-sweep,
+  .signal-unstable,
+  .loop-warning-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
